@@ -1,20 +1,25 @@
-from fastapi import FastAPI, Depends
-from sqlmodel import Session, create_engine, select
-from models import Lap, Telemetry
-import os
-from dotenv import load_dotenv
+from fastapi import FastAPI, Depends, HTTPException
+from sqlmodel import Session, select
+from models import Lap, Telemetry, engine, create_db_and_tables, get_session
+from typing import List
 
-load_dotenv()  # This loads the variables from .env into your system
+app = FastAPI(title="F1 Telemetry Analytics")
 
-DATABASE_URL = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
 
-engine = create_engine(DATABASE_URL)
+@app.get("/health")
+def health_check():
+    return {"status": "online", "database": "connected"}
 
-app = FastAPI(title="F1 Telemetry API")
-
-def get_session():
-    with Session(engine) as session:
-        yield session
+@app.get("/laps/{driver}", response_model=List[Lap])
+def get_driver_laps(driver: str, session: Session = Depends(get_session)):
+    statement = select(Lap).where(Lap.driver == driver.upper())
+    results = session.exec(statement).all()
+    if not results:
+        raise HTTPException(status_code=404, detail="Driver data not found")
+    return results
 
 @app.get("/fastest-lap/{driver}")
 async def get_driver_fastest_lap(driver: str, session: Session = Depends(get_session)):

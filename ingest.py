@@ -1,5 +1,5 @@
 import fastf1
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, select
 from models import Lap, Telemetry, engine
 from datetime import datetime
 
