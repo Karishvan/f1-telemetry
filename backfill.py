@@ -1,6 +1,8 @@
 import gc
 import time
 import fastf1
+import numpy as np
+import pandas as pd
 from sqlmodel import Session, select
 from models import Lap, Telemetry, engine
 from datetime import datetime
@@ -21,7 +23,7 @@ def backfill_season(year: int):
         print(f"Processing: {gp_name}...")
         try:
             f1_session = fastf1.get_session(year, gp_name, 'R')
-            f1_session.load(telemetry=True, laps=True, weather=False) 
+            f1_session.load(telemetry=False, laps=True, weather=False) 
 
             for driver_num in f1_session.drivers:
                 driver_info = f1_session.get_driver(driver_num)
@@ -47,24 +49,23 @@ def process_driver_data(f1_session, abb, gp_name, year):
         laps = f1_session.laps.pick_driver(abb)
         if laps.empty: return
         
-        fastest = laps.pick_fastest()
-        new_lap = Lap(
-            year=year, grand_prix=gp_name, driver=abb,
-            lap_number=int(fastest['LapNumber']),
-            lap_time_ms=fastest['LapTime'].total_seconds() * 1000,
-            compound=fastest['Compound'], tyre_life=int(fastest['TyreLife'])
-        )
-        session.add(new_lap)
-        session.commit()
-        session.refresh(new_lap)
+        lap_objects = []
+        
+        for _, lap in laps.iterrows():
+            
+            if pd.isna(lap['LapTime']):
+                continue
 
-        tel = fastest.get_telemetry()
-        tel_data = [
-            Telemetry(lap_id=new_lap.id, speed=int(r['Speed']), 
-                      throttle=int(r['Throttle']), gear=int(r['nGear']))
-            for _, r in tel.iterrows()
-        ]
-        session.bulk_save_objects(tel_data)
+            new_lap = Lap(
+                year=year, grand_prix=gp_name, driver=abb,
+                lap_number=int(lap['LapNumber']),
+                lap_time_ms=lap['LapTime'].total_seconds() * 1000,
+                compound=lap['Compound'], tyre_life=int(lap['TyreLife']),
+                stint = int(lap['Stint']),
+                is_accurate=bool(lap['IsAccurate'])
+            )
+            lap_objects.append(new_lap)
+        session.bulk_save_objects(lap_objects)
         session.commit()
 
 if __name__ == "__main__":
