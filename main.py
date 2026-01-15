@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlmodel import Session, select
 from models import Lap, Telemetry, engine, create_db_and_tables, get_session
+from analytics import analyze_tyre_deg
+import pandas as pd
 from typing import List
 
 app = FastAPI(title="F1 Telemetry Analytics")
@@ -33,3 +35,25 @@ async def get_telemetry(lap_id: int, session: Session = Depends(get_session)):
     statement = select(Telemetry).where(Telemetry.lap_id == lap_id)
     results = session.exec(statement).all()
     return results
+
+@app.get("/analytics/degradation/{year}/{grand_prix}/{driver}")
+def get_driver_degradation(year: int, grand_prix: str, driver: str, session: Session = Depends(get_session)):
+    statement = select(Lap).where(
+        Lap.year == year, 
+        Lap.grand_prix == grand_prix, 
+        Lap.driver == driver.upper()
+    )
+    results = session.exec(statement).all()
+    
+    if not results:
+        raise HTTPException(status_code=404, detail="No data found for this driver/race combo")
+
+    df = pd.DataFrame([r.dict() for r in results])
+    df['TotalLaps'] = df['lap_number'].max()
+    df['LapTimeSeconds'] = df['lap_time_ms'] / 1000
+
+    # 3. Run the Analytics Model
+    deg_report = analyze_tyre_deg(df)
+
+    # 4. Return as JSON
+    return deg_report.to_dict(orient="records")

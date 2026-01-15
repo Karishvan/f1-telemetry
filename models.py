@@ -18,6 +18,8 @@ class Lap(SQLModel, table=True):
     lap_time_ms: float
     compound: str
     tyre_life: int
+    stint: int
+    is_accurate: bool
 
 class Telemetry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
