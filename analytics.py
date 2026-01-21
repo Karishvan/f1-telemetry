@@ -59,3 +59,30 @@ def analyze_tyre_deg(driver_laps_df):
         })
         
     return pd.DataFrame(results)
+
+def calculate_compound_performance(all_laps_df):
+    compound_results = []
+    
+    for compound, data in all_laps_df.groupby('compound'):
+        if len(data) < 50: continue # Need a good sample size
+
+        # Apply Fuel Correction
+        data['corrected_time'] = data.apply(
+            lambda x: get_corrected_time(x['LapTimeSeconds'], x['lap_number'], x['TotalLaps']), 
+            axis=1
+        )
+
+        X = data['tyre_life'].values.reshape(-1, 1)
+        y = data['corrected_time'].values
+        
+        model = LinearRegression().fit(X, y)
+        deg_rate = model.coef_[0]
+        intercept_pace = model.intercept_
+        
+        compound_results.append({
+            "compound": compound,
+            "avg_deg_ms": round(deg_rate * 1000, 2),
+            "base_pace": round(intercept_pace, 3)
+        })
+        
+    return pd.DataFrame(compound_results)
