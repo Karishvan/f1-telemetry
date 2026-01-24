@@ -57,3 +57,27 @@ def get_driver_degradation(year: int, grand_prix: str, driver: str, session: Ses
 
     # 4. Return as JSON
     return deg_report.to_dict(orient="records")
+
+@app.get("/analytics/lap-chart/{year}/{grand_prix}/{driver}")
+def get_lap_chart_data(year: int, grand_prix: str, driver: str, session: Session = Depends(get_session)):
+    statement = select(Lap).where(
+        Lap.year == year, 
+        Lap.grand_prix == grand_prix, 
+        Lap.driver == driver.upper(),
+        Lap.is_accurate == 1
+    ).order_by(Lap.lap_number)
+    
+    laps = session.exec(statement).all()
+    
+    if not laps:
+        raise HTTPException(status_code=404, detail="No laps found")
+
+    return [
+        {
+            "lap": lap.lap_number,
+            "time": round(lap.lap_time_ms / 1000, 3),
+            "compound": lap.compound,
+            "stint": lap.stint
+        } 
+        for lap in laps
+    ]
