@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlmodel import Session, select
 from models import Lap, Telemetry, engine, create_db_and_tables, get_session
 from analytics import analyze_tyre_deg
+from analytics import calculate_compound_performance
 import pandas as pd
 from typing import List
 
@@ -56,4 +57,23 @@ def get_driver_degradation(year: int, grand_prix: str, driver: str, session: Ses
     deg_report = analyze_tyre_deg(df)
 
     # 4. Return as JSON
+    return deg_report.to_dict(orient="records")
+
+@app.get("/analytics/compound_performance/{year}/{grand_prix}")
+def get_compound_performance(year: int, grand_prix: str, session: Session = Depends(get_session)):
+    statement = select(Lap).where(
+        Lap.grand_prix == grand_prix,
+        Lap.year == year,  
+    )
+    results = session.exec(statement).all()
+    
+    if not results:
+        raise HTTPException(status_code=404, detail="No data found for this grand prix")
+
+    df = pd.DataFrame([r.dict() for r in results])
+    df['TotalLaps'] = df['lap_number'].max()
+    df['LapTimeSeconds'] = df['lap_time_ms'] / 1000
+
+    deg_report = calculate_compound_performance(df)
+
     return deg_report.to_dict(orient="records")
