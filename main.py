@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from models import Lap, Telemetry, engine, create_db_and_tables, get_session
 from analytics import analyze_tyre_deg
@@ -6,6 +7,21 @@ import pandas as pd
 from typing import List
 
 app = FastAPI(title="F1 Telemetry Analytics")
+
+origins = [
+    "http://98.92.249.217:5173/",
+    "http://98.92.249.217:8000/",
+    "http://localhost:5173",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 def on_startup():
