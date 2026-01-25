@@ -9,7 +9,7 @@ from typing import List
 app = FastAPI(title="F1 Telemetry Analytics")
 
 origins = [
-    "http://98.92.249.217:5173/",
+    "http://98.92.249.217",
     "http://98.92.249.217:8000/",
     "http://localhost:5173",
     "http://localhost:8080",
@@ -49,6 +49,24 @@ async def get_driver_fastest_lap(driver: str, session: Session = Depends(get_ses
 @app.get("/telemetry/{lap_id}")
 async def get_telemetry(lap_id: int, session: Session = Depends(get_session)):
     statement = select(Telemetry).where(Telemetry.lap_id == lap_id)
+    results = session.exec(statement).all()
+    return results
+
+@app.get("/lap/drivers")
+async def get_drivers(session: Session = Depends(get_session)):
+    statement = select(Lap.driver).distinct().order_by(Lap.driver)
+    results = session.exec(statement).all()
+    return results
+
+@app.get("/lap/grand_prixs")
+async def get_grand_prixs(session: Session = Depends(get_session)):
+    statement = select(Lap.grand_prix).distinct().order_by(Lap.grand_prix)
+    results = session.exec(statement).all()
+    return results
+
+@app.get("/lap/years")
+async def get_years(session: Session = Depends(get_session)):
+    statement = select(Lap.year).distinct().order_by(Lap.year)
     results = session.exec(statement).all()
     return results
 

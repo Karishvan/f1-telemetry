@@ -9,36 +9,31 @@ const RaceDashboard = () => {
 
   const [lapData, setLapData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [years, setAvailableYears] = useState([]);
+  const [gps, setAvailableGps] = useState([]);
+  const [drivers, setAvailableDrivers] = useState([]);
 
-  const years = ["2023", "2024", "2025"];
-  // TODO: later to use API to gather GP names
-  const gps = [
-    "Australian Grand Prix",
-    "Chinese Grand Prix",
-    "Japanese Grand Prix",
-    "Bahrain Grand Prix",
-    "Saudi Arabian Grand Prix",
-    "Miami Grand Prix",
-    "Emilia Romagna Grand Prix",
-    "Monaco Grand Prix",
-    "Spanish Grand Prix",
-    "Canadian Grand Prix",
-    "Austrian Grand Prix",
-    "British Grand Prix",
-    "Belgian Grand Prix",
-    "Hungarian Grand Prix",
-    "Dutch Grand Prix",
-    "Italian Grand Prix",
-    "Azerbaijan Grand Prix",
-    "Singapore Grand Prix",
-    "United States Grand Prix",
-    "Mexico City Grand Prix",
-    "São Paulo Grand Prix",
-    "Las Vegas Grand Prix",
-    "Qatar Grand Prix",
-    "Abu Dhabi Grand Prix",
-  ];
-  const drivers = ["NOR", "VER", "LEC", "HAM", "PIA", "SAI"];
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const [gpRes, driverRes, yearRes] = await Promise.all([
+          api.get("/lap/grand_prixs"),
+          api.get("/lap/drivers"),
+          api.get("/lap/years"),
+        ]);
+        setAvailableGps(gpRes.data);
+        setAvailableDrivers(driverRes.data);
+        setAvailableYears(yearRes.data);
+
+        setYear(yearRes.data[0]);
+        setGp(gpRes.data[0]);
+        setDriver(driverRes.data[0]);
+      } catch (err) {
+        console.error("Failed to load metadata", err);
+      }
+    };
+    fetchMetadata();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
