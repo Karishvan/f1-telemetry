@@ -92,7 +92,7 @@ def get_driver_degradation(year: int, grand_prix: str, driver: str, session: Ses
     # 4. Return as JSON
     return deg_report.to_dict(orient="records")
 
-@app.get("/analytics/lap-chart/{year}/{grand_prix}/{driver}")
+@app.get("/analytics/lap-chart", tags=["Analytics"])
 def get_lap_chart_data(year: int, grand_prix: str, driver: str, session: Session = Depends(get_session)):
     statement = select(Lap).where(
         Lap.year == year, 
