@@ -39,10 +39,13 @@ const RaceDashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const encodedGP = encodeURIComponent(gp);
-        const response = await api.get(
-          `/analytics/lap-chart/${year}/${encodedGP}/${driver}`,
-        );
+        const response = await api.get("/analytics/lap-chart/", {
+          params: {
+            year: year,
+            grand_prix: gp,
+            driver: driver,
+          },
+        });
         setLapData(response.data);
       } catch (error) {
         console.error("Error fetching F1 data:", error);
