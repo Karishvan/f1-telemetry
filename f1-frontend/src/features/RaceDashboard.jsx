@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import LapChart from "./LapChart";
+import StrategyAdvisor from "./StrategyAdvisor";
+
+const TABS = [
+  { id: "chart", label: "Lap Chart" },
+  { id: "strategy", label: "Strategy Advisor" },
+];
 
 const RaceDashboard = () => {
   const [year, setYear] = useState("");
   const [gp, setGp] = useState("");
   const [driver, setDriver] = useState("");
+  const [activeTab, setActiveTab] = useState("chart");
 
   const [lapData, setLapData] = useState([]);
+  const [strategyData, setStrategyData] = useState(null);
   const [loading, setLoading] = useState(false);
+
   const [years, setAvailableYears] = useState([]);
   const [gps, setAvailableGps] = useState([]);
   const [drivers, setAvailableDrivers] = useState([]);
@@ -24,7 +33,6 @@ const RaceDashboard = () => {
         setAvailableGps(gpRes.data);
         setAvailableDrivers(driverRes.data);
         setAvailableYears(yearRes.data);
-
         setYear(yearRes.data[0]);
         setGp(gpRes.data[0]);
         setDriver(driverRes.data[0]);
@@ -35,35 +43,56 @@ const RaceDashboard = () => {
     fetchMetadata();
   }, []);
 
+  // Reset strategy cache when selection changes
   useEffect(() => {
+    setStrategyData(null);
+  }, [year, gp, driver]);
+
+  useEffect(() => {
+    if (!year || !gp || !driver || activeTab !== "chart") return;
     const fetchData = async () => {
       setLoading(true);
       try {
         const response = await api.get("/analytics/lap-chart/", {
-          params: {
-            year: year,
-            grand_prix: gp,
-            driver: driver,
-          },
+          params: { year, grand_prix: gp, driver },
         });
         setLapData(response.data);
       } catch (error) {
-        console.error("Error fetching F1 data:", error);
+        console.error("Error fetching lap data:", error);
         setLapData([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, [year, gp, driver]);
+  }, [year, gp, driver, activeTab]);
+
+  useEffect(() => {
+    if (!year || !gp || !driver || activeTab !== "strategy") return;
+    if (strategyData !== null) return;
+    const fetchStrategy = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get("/analytics/strategy", {
+          params: { year, grand_prix: gp, driver },
+        });
+        setStrategyData(response.data);
+      } catch (error) {
+        console.error("Error fetching strategy:", error);
+        setStrategyData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStrategy();
+  }, [year, gp, driver, activeTab, strategyData]);
 
   return (
     <div className="p-8 bg-gray-900 min-h-screen text-white">
-      <header className="mb-8">
+      <header className="mb-6">
         <h1 className="text-3xl font-bold mb-6">F1 Strategy Analytics</h1>
 
-        <div className="flex flex-wrap gap-4 bg-gray-800 p-4 rounded-lg shadow-md">
+        <div className="flex flex-wrap gap-4 bg-gray-800 p-4 rounded-lg shadow-md mb-4">
           <div className="flex flex-col">
             <label className="text-xs text-gray-400 mb-1 ml-1">Season</label>
             <select
@@ -80,9 +109,7 @@ const RaceDashboard = () => {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1 ml-1">
-              Grand Prix
-            </label>
+            <label className="text-xs text-gray-400 mb-1 ml-1">Grand Prix</label>
             <select
               value={gp}
               onChange={(e) => setGp(e.target.value)}
@@ -111,6 +138,22 @@ const RaceDashboard = () => {
             </select>
           </div>
         </div>
+
+        <div className="flex gap-1 border-b border-gray-700">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "text-white border-b-2 border-red-500"
+                  : "text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </header>
 
       <main className="relative">
@@ -123,15 +166,29 @@ const RaceDashboard = () => {
         <div
           className={`${loading ? "opacity-30" : "opacity-100"} transition-opacity duration-300`}
         >
-          {lapData.length > 0 ? (
-            <LapChart data={lapData} driver={driver} />
-          ) : (
-            <div className="flex h-64 items-center justify-center border-2 border-dashed border-gray-700 rounded-xl">
-              <p className="text-gray-500">
-                No telemetry data available for this selection.
-              </p>
-            </div>
-          )}
+          {activeTab === "chart" &&
+            (lapData.length > 0 ? (
+              <LapChart data={lapData} driver={driver} />
+            ) : (
+              <div className="flex h-64 items-center justify-center border-2 border-dashed border-gray-700 rounded-xl">
+                <p className="text-gray-500">
+                  No telemetry data available for this selection.
+                </p>
+              </div>
+            ))}
+
+          {activeTab === "strategy" &&
+            (strategyData ? (
+              <StrategyAdvisor data={strategyData} />
+            ) : (
+              <div className="flex h-64 items-center justify-center border-2 border-dashed border-gray-700 rounded-xl">
+                <p className="text-gray-500">
+                  {loading
+                    ? "Computing strategy..."
+                    : "No strategy data available for this selection."}
+                </p>
+              </div>
+            ))}
         </div>
       </main>
     </div>
