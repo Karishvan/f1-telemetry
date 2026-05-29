@@ -96,7 +96,7 @@ def get_lap_chart_data(year: int, grand_prix: str, driver: str, session: Session
         Lap.year == year, 
         Lap.grand_prix == grand_prix, 
         Lap.driver == driver.upper(),
-        Lap.is_accurate == 1
+        Lap.is_accurate == True
     ).order_by(Lap.lap_number)
     
     laps = session.exec(statement).all()
