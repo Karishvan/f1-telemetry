@@ -109,7 +109,9 @@ const RaceDashboard = () => {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-xs text-gray-400 mb-1 ml-1">Grand Prix</label>
+            <label className="text-xs text-gray-400 mb-1 ml-1">
+              Grand Prix
+            </label>
             <select
               value={gp}
               onChange={(e) => setGp(e.target.value)}

@@ -56,20 +56,17 @@ async def get_telemetry(lap_id: int, session: Session = Depends(get_session)):
 @app.get("/lap/drivers")
 async def get_drivers(session: Session = Depends(get_session)):
     statement = select(Lap.driver).distinct().order_by(Lap.driver)
-    results = session.exec(statement).all()
-    return results
+    return session.execute(statement).scalars().all()
 
 @app.get("/lap/grand_prixs")
 async def get_grand_prixs(session: Session = Depends(get_session)):
     statement = select(Lap.grand_prix).distinct().order_by(Lap.grand_prix)
-    results = session.exec(statement).all()
-    return results
+    return session.execute(statement).scalars().all()
 
 @app.get("/lap/years")
 async def get_years(session: Session = Depends(get_session)):
     statement = select(Lap.year).distinct().order_by(Lap.year)
-    results = session.exec(statement).all()
-    return results
+    return session.execute(statement).scalars().all()
 
 @app.get("/analytics/degradation/{year}/{grand_prix}/{driver}")
 def get_driver_degradation(year: int, grand_prix: str, driver: str, session: Session = Depends(get_session)):
