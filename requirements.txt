@@ -1,0 +1,18 @@
+# Web framework + server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# ORM + PostgreSQL driver (Supabase)
+sqlmodel>=0.0.21
+psycopg2-binary>=2.9.9
+
+# F1 data
+fastf1>=3.4.0
+
+# Data + ML
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.5.0
+
+# Config
+python-dotenv>=1.0.0
